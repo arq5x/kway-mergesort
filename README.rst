@@ -24,13 +24,13 @@ The **kway-mergesort** library is a C++ API that simplifies this logic into a si
 
 You can even define your own comparison functions and pass them as parameters to the sorter.
 
-In the example below, we are sorting an input file that is passed in from the command line and writing the sorted output to stdout (cout). In this example, we have defined a custom comparison function (alphaAsc) that drives how the file is sorted.  The KwayMergeSort class is templated, so we must define what type of object we are sorting.  In this case, we keep it simple and just treat each line of the input file as a string.  Hence the "KwayMergeSort<string> *sorter = new KwayMergeSort<string>".  We also tell it to only use 100Kb (base 10) of memory for sorting, and we ask it to write it's intermediate files to the present working directory.  The sorter will cleanup all of it's intermediate files when it has finished sorting.
+In the example below, we are sorting an input file that is passed in from the command line and writing the sorted output to stdout (cout). In this example, we have defined a custom comparison function (alphaAsc) that drives how the file is sorted.  The KwayMergeSort class is templated, so we must define what type of object we are sorting.  In this case, we keep it simple and just treat each line of the input file as a string.  Hence the "*KwayMergeSort<string> *sorter = new KwayMergeSort<string>*".  We also tell it to only use 100Kb (base 10) of memory for sorting, and we ask it to write it's intermediate files to the present working directory.  The sorter will cleanup all of it's intermediate files when it has finished sorting.
 
 Once we have defined how we want the sorting to be done, we instantiate a new instance of the "kway" class:
 
 ::
 
-KwayMergeSort<string> *sorter = new KwayMergeSort<string> (inFile, &cout, alphaAsc, bufferSize, compressOutput, tempPath);
+  KwayMergeSort<string> *sorter = new KwayMergeSort<string> (inFile, &cout, alphaAsc, bufferSize, compressOutput, tempPath);
 
 This tells the class to sort "inFile", and write to "cout" (this could also be an ofstream).  We also tell it to use our custom sorting function (alphaAsc) and only "bufferSize" worth of memory.
 
@@ -38,7 +38,7 @@ Once we have instantiated the class, we ask it to sort the input and write the o
 
 ::
 
-sorter->Sort();
+  sorter->Sort();
 
 Here's the entire listing.
 
