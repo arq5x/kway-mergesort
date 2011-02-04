@@ -60,7 +60,12 @@ Here's the entire listing.
       string tempPath     = "./";        // allows you to write the intermediate files anywhere you want.
       
       // sort the lines of a file lexicographically in ascending order (akin to UNIX sort, "sort FILE")
-      KwayMergeSort<string> *sorter = new KwayMergeSort<string> (inFile, &cout, alphaAsc, bufferSize, compressOutput, tempPath);
+      KwayMergeSort<string> *sorter = new KwayMergeSort<string> (inFile, 
+                                                                 &cout, 
+                                                                 alphaAsc, 
+                                                                 bufferSize, 
+                                                                 compressOutput, 
+                                                                 tempPath);
       sorter->Sort();
   } 
 
