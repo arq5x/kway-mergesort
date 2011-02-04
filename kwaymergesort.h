@@ -1,17 +1,14 @@
 /****************************************************************************
-   ExternalMergeSort.h (c) 2009 Aaron Quinlan
-
-   Hall Lab
-   Department of Biochemistry and Molecular Genetics
+   kwaymergesort.h (c) 2009,2010,2011 Aaron Quinlan
+   Center for Public Health Genomics
    University of Virginia
-
    All rights reserved.
 
-   Object for storing the BamAlignments (N=2) for
-   a readpair mapping combination
+   MIT License
+
 ****************************************************************************/
-#ifndef EXTMERGESORT_H
-#define EXTMERGESORT_H
+#ifndef KWAYMERGESORT_H
+#define KWAYMERGESORT_H
 
 #include <iostream>
 #include <fstream>
@@ -28,13 +25,8 @@
 #include <libgen.h> //for basename()
 using namespace std;
 
-// "local" includes
-#include "gzstream.h"
-
-
 bool isRegularFile(const string& filename);
-bool isGzipFile(const string& filename);
-//STLized version of basename()
+// STLized version of basename()
 // (because POSIX basename() modifies the input string pointer)
 // Additionally: removes any extension the basename might have.
 std::string stl_basename(const std::string& path);
@@ -74,26 +66,21 @@ public:
 // Class methods and elements
 //************************************************
 template <class T>
-class ExtMergeSort {
+class KwayMergeSort {
 
 public:
     // constructor
-    ExtMergeSort(const string &inFile,
+    KwayMergeSort(const string &inFile,
                  ostream *out,
                  bool (*compareFunction)(const T &a, const T &b),
                  int  maxBufferSize  = 10000,
                  bool compressOutput = false,
                  string tempPath     = "");
     // destructor
-    ~ExtMergeSort(void);
-
-    // drives the creation of sorted sub-files stored on disk.
-    void DivideAndSort();
-
-    // drives the merging of the sorted temp files.
-    // final, sorted and merged output is written to "out".
-    void Merge();
-
+    ~KwayMergeSort(void);
+    // sort
+    void Sort();
+    
 private:
     string _inFile;
     bool (*_compareFunction)(const T &a, const T &b);
@@ -105,6 +92,13 @@ private:
     bool _compressOutput;
     bool _tempFileUsed;
     ostream *_out;
+
+    // drives the creation of sorted sub-files stored on disk.
+    void DivideAndSort();
+
+    // drives the merging of the sorted temp files.
+    // final, sorted and merged output is written to "out".
+    void Merge();
 
     void WriteToTempFile(const vector<T> &lines);
     void OpenTempFiles();
@@ -119,7 +113,7 @@ private:
 //************************************************
 // constructor
 template <class T>
-ExtMergeSort<T>::ExtMergeSort (const string &inFile,
+KwayMergeSort<T>::KwayMergeSort (const string &inFile,
                                ostream *out,
                                bool (*compareFunction)(const T &a, const T &b),
                                int maxBufferSize,
@@ -137,20 +131,26 @@ ExtMergeSort<T>::ExtMergeSort (const string &inFile,
 
 // destructor
 template <class T>
-ExtMergeSort<T>::~ExtMergeSort(void)
+KwayMergeSort<T>::~KwayMergeSort(void)
 {}
 
-
-// Sort
+// API for sorting.  
 template <class T>
-void ExtMergeSort<T>::DivideAndSort() {
+void KwayMergeSort<T>::Sort() { 
+    DivideAndSort();
+    Merge();
+}
+
+
+template <class T>
+void KwayMergeSort<T>::DivideAndSort() {
 
     istream *input = new ifstream(_inFile.c_str(), ios::in);
     // gzipped
-    if ((isGzipFile(_inFile) == true) && (isRegularFile(_inFile) == true)) {
-        delete input;
-        input = new igzstream(_inFile.c_str(), ios::in);
-    }
+    // if ((isGzipFile(_inFile) == true) && (isRegularFile(_inFile) == true)) {
+    //     delete input;
+    //     input = new igzstream(_inFile.c_str(), ios::in);
+    // }
 
     // bail unless the file is legit
     if ( input->good() == false ) {
@@ -199,14 +199,14 @@ void ExtMergeSort<T>::DivideAndSort() {
         else {
             sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
             for (size_t i = 0; i < lineBuffer.size(); ++i)
-                *_out << lineBuffer[i];
+                *_out << lineBuffer[i] << endl;
         }
     }
 }
 
 
 template <class T>
-void ExtMergeSort<T>::WriteToTempFile(const vector<T> &lineBuffer) {
+void KwayMergeSort<T>::WriteToTempFile(const vector<T> &lineBuffer) {
     // name the current tempfile
     stringstream tempFileSS;
     if (_tempPath.size() == 0)
@@ -223,8 +223,9 @@ void ExtMergeSort<T>::WriteToTempFile(const vector<T> &lineBuffer) {
     output = new ofstream(tempFileName.c_str(), ios::out);
 
     // write the contents of the current buffer to the temp file
-    for (size_t i = 0; i < lineBuffer.size(); ++i)
-        *output << lineBuffer[i];
+    for (size_t i = 0; i < lineBuffer.size(); ++i) {
+        *output << lineBuffer[i] << endl;
+    }
 
     // update the tempFile number and add the tempFile to the list of tempFiles
     ++_runCounter;
@@ -243,7 +244,7 @@ void ExtMergeSort<T>::WriteToTempFile(const vector<T> &lineBuffer) {
 // SEE: http://stackoverflow.com/questions/2290518/c-n-way-merge-for-external-sort, post from Eric Lippert.
 //----------------------------------------------------------
 template <class T>
-void ExtMergeSort<T>::Merge() {
+void KwayMergeSort<T>::Merge() {
 
     // we can skip this step if there are no temp files to
     // merge.  That is, the entire inout file fit in memory
@@ -262,7 +263,7 @@ void ExtMergeSort<T>::Merge() {
     // extract the first line from each temp file
     T line;
     for (size_t i = 0; i < _vTempFiles.size(); ++i) {
-        *_vTempFiles[i] >> line;  // overloaded >> for PAIR struct
+        *_vTempFiles[i] >> line;
         outQueue.push( MERGE_DATA<T>(line, _vTempFiles[i], _compareFunction) );
     }
 
@@ -272,30 +273,31 @@ void ExtMergeSort<T>::Merge() {
         MERGE_DATA<T> lowest = outQueue.top();
 
         // write the entry from the top of the queue
-        // and then delete that entry forever.
-        *_out << lowest.data;
+        *_out << lowest.data << endl;
+        // remove this record from the queue
         outQueue.pop();
 
         // add the next line from the lowest stream (above) to the queue
         // as long as it's not EOF.
-        *(lowest.stream) >> line;  // overloaded >> for PAIR struct
+        *(lowest.stream) >> line;
         if (*(lowest.stream))
             outQueue.push( MERGE_DATA<T>(line, lowest.stream, _compareFunction) );
     }
 
-    // clean up the gazillion temp files.
+    // clean up the temp files.
     CloseTempFiles();
 }
 
 
 template <class T>
-void ExtMergeSort<T>::OpenTempFiles() {
+void KwayMergeSort<T>::OpenTempFiles() {
     for (size_t i=0; i < _vTempFileNames.size(); ++i) {
 
         ifstream *file;
 
         // not gzipped
-        if ((isGzipFile(_vTempFileNames[i]) == false) && (isRegularFile(_vTempFileNames[i]) == true)) {
+        // if ((isGzipFile(_vTempFileNames[i]) == false) && (isRegularFile(_vTempFileNames[i]) == true)) {
+        if (isRegularFile(_vTempFileNames[i]) == true) {
             file = new ifstream(_vTempFileNames[i].c_str(), ios::in);
         }
         // gzipped
@@ -318,15 +320,15 @@ void ExtMergeSort<T>::OpenTempFiles() {
 
 
 template <class T>
-void ExtMergeSort<T>::CloseTempFiles() {
+void KwayMergeSort<T>::CloseTempFiles() {
     // delete the pointers to the temp files.
     for (size_t i=0; i < _vTempFiles.size(); ++i) {
-        //_vTempFiles[i]->close();
+        _vTempFiles[i]->close();
         delete _vTempFiles[i];
     }
     // delete the temp files from the file system.
     for (size_t i=0; i < _vTempFileNames.size(); ++i) {
-        //remove(_vTempFileNames[i].c_str());  // remove = UNIX "rm"
+        remove(_vTempFileNames[i].c_str());  // remove = UNIX "rm"
     }
 }
 
@@ -398,5 +400,5 @@ string stl_basename(const string &path) {
 }
 
 
-#endif /* EXTMERGESORT_H */
+#endif /* KWAYMERGESORT_H */
 
