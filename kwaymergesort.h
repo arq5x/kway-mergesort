@@ -276,14 +276,13 @@ void KwayMergeSort<T>::Merge() {
         *_out << lowest.data << endl;
         // remove this record from the queue
         outQueue.pop();
-
+        
         // add the next line from the lowest stream (above) to the queue
         // as long as it's not EOF.
         *(lowest.stream) >> line;
         if (*(lowest.stream))
             outQueue.push( MERGE_DATA<T>(line, lowest.stream, _compareFunction) );
     }
-
     // clean up the temp files.
     CloseTempFiles();
 }
