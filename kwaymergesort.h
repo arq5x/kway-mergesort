@@ -170,13 +170,11 @@ void KwayMergeSort<T>::DivideAndSort() {
     T line;
     while (*input >> line) {
 
-        // add the current line to the buffer
-        // and track the memory used.
+        // add the current line to the buffer and track the memory used.
         lineBuffer.push_back(line);
         totalBytes += sizeof(line);  // buggy?
 
-        // sort the buffer and write to a temp file
-        // if we have filled up our quota
+        // sort the buffer and write to a temp file if we have filled up our quota
         if (totalBytes > _maxBufferSize) {
             sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
             WriteToTempFile(lineBuffer);
@@ -196,7 +194,7 @@ void KwayMergeSort<T>::DivideAndSort() {
             WriteToTempFile(lineBuffer);
         }
         // otherwise, the entire file fit in the memory given,
-        // so we can just dumpto stdout.
+        // so we can just dump to the output.
         else {
             sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
             for (size_t i = 0; i < lineBuffer.size(); ++i)
@@ -253,7 +251,6 @@ void KwayMergeSort<T>::Merge() {
     if (_tempFileUsed == false)
         return;
 
-
     // open the sorted temp files up for merging.
     // loads ifstream pointers into _vTempFiles
     OpenTempFiles();
@@ -272,12 +269,10 @@ void KwayMergeSort<T>::Merge() {
     while (outQueue.empty() == false) {
         // grab the lowest element, print it, then ditch it.
         MERGE_DATA<T> lowest = outQueue.top();
-
         // write the entry from the top of the queue
         *_out << lowest.data << endl;
         // remove this record from the queue
         outQueue.pop();
-        
         // add the next line from the lowest stream (above) to the queue
         // as long as it's not EOF.
         *(lowest.stream) >> line;
