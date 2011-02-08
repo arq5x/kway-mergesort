@@ -214,3 +214,33 @@ Here it is in action:
   chr3	7000	100000
   chr3	8000	10000
 
+
+Note that the BED struct could just as easily be a class:
+
+::
+
+  class BED {
+  
+  public:
+      
+      string chrom;
+      unsigned int start;
+      unsigned int end;
+      
+      // overload the << operator for writing a BED struct
+      friend ostream& operator<<(ostream &os, const BED &b) {
+          os  << b.chrom  << "\t" 
+              << b.start  << "\t" 
+              << b.end;
+          return os;
+      }
+      // overload the >> operator for reading into a BED struct    
+      friend istream& operator>>(istream &is, BED &b) {
+          is  >> b.chrom 
+              >> b.start  
+              >> b.end;
+          return is;
+      }    
+  };
+
+
