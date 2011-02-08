@@ -4,6 +4,9 @@
 :Website: http://cphg.virginia.edu/quinlan
 :Contact: arq5x@virginia.edu
 
+
+.. contents::
+
 ======================================================================
 kway-mergesort - A lightweight, templated C++ API for external sorting
 ======================================================================
