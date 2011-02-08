@@ -24,6 +24,10 @@ The **kway-mergesort** library is a C++ API that simplifies this logic into a si
 
 You can even define your own comparison functions and pass them as parameters to the sorter.
 
+
+A basic example with plain old strings
+=======================================
+
 In the example below, we are sorting an input file that is passed in from the command line and writing the sorted output to stdout (cout). In this example, we have defined a custom comparison function (alphaAsc) that drives how the file is sorted.  The KwayMergeSort class is templated, so we must define what type of object we are sorting.  In this case, we keep it simple and just treat each line of the input file as a string.  Hence the "*KwayMergeSort<string> *sorter = new KwayMergeSort<string>*".  We also tell it to only use 100Kb (base 10) of memory for sorting, and we ask it to write it's intermediate files to the present working directory.  The sorter will cleanup all of it's intermediate files when it has finished sorting.
 
 Once we have defined how we want the sorting to be done, we instantiate a new instance of the "kway" class:
@@ -112,4 +116,98 @@ The included program "TestMerge.cpp" contains the above code and can be used to 
   zulus
 
 
+A more detailed example with a custom STRUCT and overloading ">>" and "<<"
+===========================================================================
+
+The following example illustrates how the same kway-mergesort class can be used to sort more complex data.  Here we will create a custom struct for a simple BED record.  The listing below defines a BED struct with three fields: chrom, start, and end. Now as mentioned, in order for the kway-mergesort class to sort the data, you must define overload the C++ >> and << operators so that the sorting class can know how to read and write BED data.  Accordingly, the BED struct includes custom definitions of << and >>.  Lastly, we need a custom comparison function (in this case, byChromThenStart) to drive how the input file is sorted.  This function sorts first by the chromosome, then within each chromosome, it sorts by start position.
+
+Once the STRUCT and the comparison function are setup, the only difference in this example w.r.t. the above string example, is that we tell the template we are dealing with a BED type (hence the KwayMergeSort<BED>) and we provide the new comparison function.
+
+::
+
+  #include <cstdlib>
+  #include <iostream>
+  #include <fstream>
+  #include <vector>
+  #include <string>
+  #include <math.h>
+  using namespace std;
   
+  // local includes
+  #include "kwaymergesort.h"
+  
+  // a basic struct for a BED entry.
+  struct BED {
+      string chrom;
+      unsigned int start;
+      unsigned int end;
+      
+      // overload the << operator for writing a BED struct
+      friend ostream& operator<<(ostream &os, const BED &b) {
+          os  << b.chrom  << "\t" 
+              << b.start  << "\t" 
+              << b.end;
+          return os;
+      }
+      // overload the >> operator for reading into a BED struct    
+      friend istream& operator>>(istream &is, BED &b) {
+          is  >> b.chrom 
+              >> b.start  
+              >> b.end;
+          return is;
+      }    
+  };
+  
+  // comparison function for sorting by chromosome, then by start.
+  bool byChromThenStart(BED const &a, BED const &b) {
+  
+      if      (a.chrom < b.chrom) return true;
+      else if (a.chrom > b.chrom) return false;
+  
+      if      (a.start < b.start) return true;
+      else if (a.start >= b.start) return false;
+  
+      return false;
+  };
+  
+  
+  int main(int argc, char* argv[]) {
+  
+      string inFile       = argv[1];
+      int  bufferSize     = 100000;      // allow the sorter to use 100Kb (base 10) of memory for sorting.  
+                                         // once full, it will dump to a temp file and grab another chunk.     
+      bool compressOutput = false;       // not yet supported
+      string tempPath     = "./";        // allows you to write the intermediate files anywhere you want.
+      
+      // sort a BED file by chrom then start
+      KwayMergeSort<BED> *bed_sorter = new KwayMergeSort<BED> (inFile, 
+                                                              &cout, 
+                                                              byChromThenStart, 
+                                                              bufferSize, 
+                                                              compressOutput, 
+                                                              tempPath);
+      bed_sorter->Sort();
+  }
+
+Here it is in action:
+
+::
+
+  $ cat example.bed 
+  chr2	100	200
+  chr3	8000	10000
+  chr1	10	30
+  chr2	80	150
+  chr1	5	10
+  chr3	7000	100000
+
+  $ g++ TestMergeCustomStruct.cpp -o test_bedsort
+
+  $ ./test_bedsort example.bed
+  chr1	5	10
+  chr1	10	30
+  chr2	80	150
+  chr2	100	200
+  chr3	7000	100000
+  chr3	8000	10000
+
