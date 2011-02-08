@@ -33,14 +33,11 @@ struct BED {
 
 // comparison function for sorting by chromosome, then by start.
 bool byChromThenStart(BED const &a, BED const &b) {
-
     if      (a.chrom < b.chrom) return true;
     else if (a.chrom > b.chrom) return false;
-
-    if      (a.start < b.start) return true;
+    // we get here when chroms are the same. now sort on starts
+    if      (a.start < b.start)  return true;
     else if (a.start >= b.start) return false;
-
-    return false;
 };
 
 
