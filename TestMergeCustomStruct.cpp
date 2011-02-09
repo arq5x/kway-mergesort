@@ -15,15 +15,26 @@ struct BED {
     unsigned int start;
     unsigned int end;
     
+    bool operator < (const BED &b) const
+    {
+        if      (chrom < b.chrom)  return true;
+        else if (chrom > b.chrom)  return false;
+        // we get here when chroms are the same. now sort on starts
+        if      (start < b.start)  return true;
+        else if (start >= b.start) return false;
+    }
+    
     // overload the << operator for writing a BED struct
-    friend ostream& operator<<(ostream &os, const BED &b) {
+    friend ostream& operator<<(ostream &os, const BED &b) 
+    {
         os  << b.chrom  << "\t" 
             << b.start  << "\t" 
             << b.end;
         return os;
     }
     // overload the >> operator for reading into a BED struct    
-    friend istream& operator>>(istream &is, BED &b) {
+    friend istream& operator>>(istream &is, BED &b) 
+    {
         is  >> b.chrom 
             >> b.start  
             >> b.end;
@@ -31,14 +42,11 @@ struct BED {
     }    
 };
 
+
 // comparison function for sorting by chromosome, then by start.
-bool byChromThenStart(BED const &a, BED const &b) {
-    if      (a.chrom < b.chrom) return true;
-    else if (a.chrom > b.chrom) return false;
-    // we get here when chroms are the same. now sort on starts
-    if      (a.start < b.start)  return true;
-    else if (a.start >= b.start) return false;
-};
+bool bySize(BED const &a, BED const &b) {
+    return (a.end - a.start) < (b.end - b.start);
+}
 
 
 int main(int argc, char* argv[]) {
@@ -52,9 +60,13 @@ int main(int argc, char* argv[]) {
     // sort a BED file by chrom then start
     KwayMergeSort<BED> *bed_sorter = new KwayMergeSort<BED> (inFile, 
                                                             &cout, 
-                                                            byChromThenStart, 
                                                             bufferSize, 
                                                             compressOutput, 
                                                             tempPath);
+                                                            
+    cout << "First sort by chrom, then start using the overloaded \"<\" operator\n";
+    bed_sorter->Sort();
+    cout << "Now, sort by size using a custom function (bySize)\n";
+    bed_sorter->SetComparison(bySize);
     bed_sorter->Sort();
 }

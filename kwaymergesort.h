@@ -70,17 +70,28 @@ template <class T>
 class KwayMergeSort {
 
 public:
-    // constructor
+                                  
+    // constructor, using custom comparison function
     KwayMergeSort(const string &inFile,
                  ostream *out,
-                 bool (*compareFunction)(const T &a, const T &b),
-                 int  maxBufferSize  = 10000,
+                 bool (*compareFunction)(const T &a, const T &b) = NULL,
+                 int  maxBufferSize  = 1000000,
                  bool compressOutput = false,
-                 string tempPath     = "");
+                 string tempPath     = "./");
+    
+    // constructor, using T's overloaded < operator.  Must be defined.
+    KwayMergeSort(const string &inFile,
+                 ostream *out,
+                 int  maxBufferSize  = 1000000,
+                 bool compressOutput = false,
+                 string tempPath     = "./");
+                                               
     // destructor
     ~KwayMergeSort(void);
-    // sort
-    void Sort();
+     
+    void Sort();            // Sort the data
+    void SetBufferSize(int bufferSize);   // change the buffer size
+    void SetComparison(bool (*compareFunction)(const T &a, const T &b));   // change the sort criteria
     
 private:
     string _inFile;
@@ -112,6 +123,7 @@ private:
 // IMPLEMENTATION
 // Class methods and elements
 //************************************************
+
 // constructor
 template <class T>
 KwayMergeSort<T>::KwayMergeSort (const string &inFile,
@@ -129,6 +141,21 @@ KwayMergeSort<T>::KwayMergeSort (const string &inFile,
     , _compressOutput(compressOutput)
 {}
 
+// constructor
+template <class T>
+KwayMergeSort<T>::KwayMergeSort (const string &inFile,
+                               ostream *out,
+                               int maxBufferSize,
+                               bool compressOutput,
+                               string tempPath)
+    : _inFile(inFile)
+    , _out(out)
+    , _compareFunction(NULL)
+    , _tempPath(tempPath)
+    , _maxBufferSize(maxBufferSize)
+    , _runCounter(0)
+    , _compressOutput(compressOutput)
+{}
 
 // destructor
 template <class T>
@@ -140,6 +167,18 @@ template <class T>
 void KwayMergeSort<T>::Sort() { 
     DivideAndSort();
     Merge();
+}
+
+// change the buffer size used for sorting
+template <class T>
+void KwayMergeSort<T>::SetBufferSize (int bufferSize) {
+    _maxBufferSize = bufferSize;
+}
+
+// change the sorting criteria
+template <class T>
+void KwayMergeSort<T>::SetComparison (bool (*compareFunction)(const T &a, const T &b)) {
+    _compareFunction = compareFunction;
 }
 
 
@@ -176,7 +215,11 @@ void KwayMergeSort<T>::DivideAndSort() {
 
         // sort the buffer and write to a temp file if we have filled up our quota
         if (totalBytes > _maxBufferSize) {
-            sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+            if (_compareFunction != NULL)
+                sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+            else
+                sort(lineBuffer.begin(), lineBuffer.end());
+            // write the sorted data to a temp file
             WriteToTempFile(lineBuffer);
             // clear the buffer for the next run
             lineBuffer.clear();
@@ -190,13 +233,21 @@ void KwayMergeSort<T>::DivideAndSort() {
         // write the last "chunk" to the tempfile if
         // a temp file had to be used (i.e., we exceeded the memory)
         if (_tempFileUsed == true) {
-            sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+            if (_compareFunction != NULL)
+                sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+            else
+                sort(lineBuffer.begin(), lineBuffer.end());
+            // write the sorted data to a temp file
+            WriteToTempFile(lineBuffer);
             WriteToTempFile(lineBuffer);
         }
         // otherwise, the entire file fit in the memory given,
         // so we can just dump to the output.
         else {
-            sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+            if (_compareFunction != NULL)
+                sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+            else
+                sort(lineBuffer.begin(), lineBuffer.end());
             for (size_t i = 0; i < lineBuffer.size(); ++i)
                 *_out << lineBuffer[i] << endl;
         }
