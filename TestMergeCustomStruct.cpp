@@ -69,4 +69,15 @@ int main(int argc, char* argv[]) {
     cout << "Now, sort by size using a custom function (bySize)\n";
     bed_sorter->SetComparison(bySize);
     bed_sorter->Sort();
+    
+
+    // sort a BED file by chrom then start
+    KwayMergeSort<BED> *bed_sorter_custom = new KwayMergeSort<BED> (inFile, 
+                                                                    &cout,
+                                                                    bySize, 
+                                                                    bufferSize, 
+                                                                    compressOutput, 
+                                                                    tempPath);
+    cout << "Now create a new class with bySize() as the custom sort function\n";
+    bed_sorter_custom->Sort();
 }

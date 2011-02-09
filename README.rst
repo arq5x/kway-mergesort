@@ -122,9 +122,18 @@ The included program "TestMerge.cpp" contains the above code and can be used to 
 A more detailed example with a custom STRUCT and overloading ">>" and "<<"
 ===========================================================================
 
-The following example illustrates how the same kway-mergesort class can be used to sort more complex data.  Here we will create a custom struct for a simple BED record.  The listing below defines a BED struct with three fields: chrom, start, and end. Now as mentioned, in order for the kway-mergesort class to sort the data, you must define overload the C++ >> and << operators so that the sorting class can know how to read and write BED data.  Accordingly, the BED struct includes custom definitions of << and >>.  Lastly, we need a custom comparison function (in this case, byChromThenStart) to drive how the input file is sorted.  This function sorts first by the chromosome, then within each chromosome, it sorts by start position.
+The following example illustrates how the same kway-mergesort class can be used to sort more complex data.  Here we will create a custom struct for a simple BED record.  The listing below defines a BED struct with three fields: chrom, start, and end. Now as mentioned, in order for the kway-mergesort class to sort the data, you must define overload the C++ >> and << operators so that the sorting class can know how to read and write BED data.  Accordingly, the BED struct includes custom definitions of << and >>.  Lastly, we need a custom comparison function to drive how the input file is sorted.  There are two options:
 
-Once the STRUCT and the comparison function are setup, the only difference in this example w.r.t. the above string example, is that we tell the template we are dealing with a BED type (hence the KwayMergeSort<BED>) and we provide the new comparison function.
+1. Overload the < operator in your struct / class.  An example of this is provided where the < operator sorts by chrom, then start.
+2. Define a function (not class/struct method) for a custom sort.  An example of this is provided in the "bySize" function.
+
+Once the STRUCT or CLASS and the optional comparison function are setup, the only difference in this example w.r.t. the above string example, is that we tell the template we are dealing with a BED type (hence the KwayMergeSort<BED>) and we provide the new comparison function.
+
+In the example below, we first sort the file using the overloaded < operator.  Note that we instantiate the class without passing a custom function; this tells the sorter to use the < operator defined for BED.  We will get a compilation error if we don't provide a definition for the < operator and omit a comparison function when creating a class.
+
+We then change the sort criteria to use the "bySize" function.  This change is made with the SetComparison() method.  
+
+Lastly, we create a new class using the "bySize" function as a custom sort criteria.
 
 ::
 
@@ -145,15 +154,26 @@ Once the STRUCT and the comparison function are setup, the only difference in th
       unsigned int start;
       unsigned int end;
       
+      bool operator < (const BED &b) const
+      {
+          if      (chrom < b.chrom)  return true;
+          else if (chrom > b.chrom)  return false;
+          // we get here when chroms are the same. now sort on starts
+          if      (start < b.start)  return true;
+          else if (start >= b.start) return false;
+      }
+      
       // overload the << operator for writing a BED struct
-      friend ostream& operator<<(ostream &os, const BED &b) {
+      friend ostream& operator<<(ostream &os, const BED &b) 
+      {
           os  << b.chrom  << "\t" 
               << b.start  << "\t" 
               << b.end;
           return os;
       }
       // overload the >> operator for reading into a BED struct    
-      friend istream& operator>>(istream &is, BED &b) {
+      friend istream& operator>>(istream &is, BED &b) 
+      {
           is  >> b.chrom 
               >> b.start  
               >> b.end;
@@ -161,17 +181,11 @@ Once the STRUCT and the comparison function are setup, the only difference in th
       }    
   };
   
+  
   // comparison function for sorting by chromosome, then by start.
-  bool byChromThenStart(BED const &a, BED const &b) {
-  
-      if      (a.chrom < b.chrom) return true;
-      else if (a.chrom > b.chrom) return false;
-  
-      if      (a.start < b.start) return true;
-      else if (a.start >= b.start) return false;
-  
-      return false;
-  };
+  bool bySize(BED const &a, BED const &b) {
+      return (a.end - a.start) < (b.end - b.start);
+  }
   
   
   int main(int argc, char* argv[]) {
@@ -185,62 +199,26 @@ Once the STRUCT and the comparison function are setup, the only difference in th
       // sort a BED file by chrom then start
       KwayMergeSort<BED> *bed_sorter = new KwayMergeSort<BED> (inFile, 
                                                               &cout, 
-                                                              byChromThenStart, 
                                                               bufferSize, 
                                                               compressOutput, 
                                                               tempPath);
+                                                              
+      cout << "First sort by chrom, then start using the overloaded \"<\" operator\n";
       bed_sorter->Sort();
-  }
-
-Here it is in action:
-
-::
-
-  $ cat example.bed 
-  chr2	100	200
-  chr3	8000	10000
-  chr1	10	30
-  chr2	80	150
-  chr1	5	10
-  chr3	7000	100000
-
-  $ g++ TestMergeCustomStruct.cpp -o test_bedsort
-
-  $ ./test_bedsort example.bed
-  chr1	5	10
-  chr1	10	30
-  chr2	80	150
-  chr2	100	200
-  chr3	7000	100000
-  chr3	8000	10000
-
-
-Note that the BED struct could just as easily be a class:
-
-::
-
-  class BED {
+      cout << "Now, sort by size using a custom function (bySize)\n";
+      bed_sorter->SetComparison(bySize);
+      bed_sorter->Sort();
+      
   
-  public:
-      
-      string chrom;
-      unsigned int start;
-      unsigned int end;
-      
-      // overload the << operator for writing a BED struct
-      friend ostream& operator<<(ostream &os, const BED &b) {
-          os  << b.chrom  << "\t" 
-              << b.start  << "\t" 
-              << b.end;
-          return os;
-      }
-      // overload the >> operator for reading into a BED struct    
-      friend istream& operator>>(istream &is, BED &b) {
-          is  >> b.chrom 
-              >> b.start  
-              >> b.end;
-          return is;
-      }    
-  };
+      // sort a BED file by chrom then start
+      KwayMergeSort<BED> *bed_sorter_custom = new KwayMergeSort<BED> (inFile, 
+                                                                      &cout,
+                                                                      bySize, 
+                                                                      bufferSize, 
+                                                                      compressOutput, 
+                                                                      tempPath);
+      cout << "Now create a new class with bySize() as the custom sort function\n";
+      bed_sorter_custom->Sort();
+  }
 
 
