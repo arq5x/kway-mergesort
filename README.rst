@@ -11,7 +11,7 @@
 kway-mergesort - A lightweight, templated C++ API for external sorting
 ======================================================================
 
-Often times, we run into cases where we need to sort extremely large files from within a piece of software. While it is certainly possible to make system calls to the UNIX "sort" command, it is much more flexible (and convenient) to have a nice API that will handle all of the external sorting within the constraints of the memory available.
+We often run into cases where we need to sort extremely large files from within a piece of software. While it is certainly possible to make system calls to the UNIX "sort" command, it is much more flexible (and convenient) to have a nice API that will handle all of the external sorting within the constraints of the memory available.
 
 There's a huge literature in Computer Science on this topic, and the most general approach to sorting files that are too big to fit in memory is the "merge sort" (e.g., http://www.cprogramming.com/tutorial/computersciencetheory/mergesort.html). 
 
