@@ -148,10 +148,21 @@ public:
 
   // destructor
   ~KwayMergeSort(void);
+  // Sort the data
+  void Sort();            
+  // change the buffer size
+  void SetBufferSize(int bufferSize);   
+  // change the sort criteria
+  void SetComparison(bool(*compareFunction)(const T &a, const T &b));   
 
-  void Sort();            // Sort the data
-  void SetBufferSize(int bufferSize);   // change the buffer size
-  void SetComparison(bool(*compareFunction)(const T &a, const T &b));   // change the sort criteria
+  // drives the creation of sorted sub-files stored on disk.
+  void DivideAndSort();
+  // drives the merging of the sorted temp files.
+  // final, sorted and merged output is written to "out".
+  void Merge();
+
+  void MergeStepByStep(std::multiset < MERGE_DATA<T> > * outQueue,
+                       T * line);
 
 private:
   string _inFile;
@@ -164,13 +175,6 @@ private:
   bool _compressOutput;
   bool _tempFileUsed;
   ostream *_out;
-
-  // drives the creation of sorted sub-files stored on disk.
-  void DivideAndSort();
-
-  // drives the merging of the sorted temp files.
-  // final, sorted and merged output is written to "out".
-  void Merge();
 
   void WriteToTempFile(const vector<T> &lines);
   void OpenTempFiles();
@@ -348,7 +352,8 @@ void KwayMergeSort<T>::WriteToTempFile(const vector<T> &lineBuffer) {
 // Merge the sorted temp files.
 // uses a priority queue, with the values being a pair of
 // the record from the file, and the stream from which the record came.
-// SEE: http://stackoverflow.com/questions/2290518/c-n-way-merge-for-external-sort, post from Eric Lippert.
+// SEE: http://stackoverflow.com/questions/2290518/c-n-way-merge-for-external-sort,
+// post from Eric Lippert.
 //----------------------------------------------------------
 template <class T>
 void KwayMergeSort<T>::Merge() {
@@ -376,21 +381,27 @@ void KwayMergeSort<T>::Merge() {
 
   // keep working until the queue is empty
   while (outQueue.empty() == false) {
-    // grab the lowest element, print it, then ditch it.
-    MERGE_DATA<T> lowest = *(outQueue.begin());
-    // write the entry from the top of the queue
-    *_out << lowest.data << endl;
-    // remove this record from the queue
-    outQueue.erase(outQueue.begin());
-    // add the next line from the lowest stream (above) to the queue
-    // as long as it's not EOF.
-    *(lowest.stream) >> line;
-    if (*(lowest.stream))
-      outQueue.insert
-      (MERGE_DATA<T>(line, lowest.stream, _compareFunction));
+    MergeStepByStep(&outQueue, &line);   
   }
   // clean up the temp files.
   CloseTempFiles();
+}
+
+template <class T>
+void KwayMergeSort<T>::MergeStepByStep(std::multiset < MERGE_DATA<T> > * outQueue,
+                                       T * line) {
+  // grab the lowest element, print it, then ditch it.
+  MERGE_DATA<T> lowest = *(outQueue->begin());
+  // write the entry from the top of the queue
+  *_out << lowest.data << endl;
+  // remove this record from the queue
+  outQueue->erase(outQueue->begin());
+  // add the next line from the lowest stream (above) to the queue
+  // as long as it's not EOF.
+  *(lowest.stream) >> *line;
+  if (*(lowest.stream))
+    outQueue->insert
+    (MERGE_DATA<T>(*line, lowest.stream, _compareFunction));
 }
 
 
