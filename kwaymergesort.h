@@ -161,6 +161,8 @@ public:
   // final, sorted and merged output is written to "out".
   void Merge();
 
+
+  void InitializeMergeStep(std::multiset < MERGE_DATA<T> > * outQueue);
   void MergeStepByStep(std::multiset < MERGE_DATA<T> > * outQueue,
                        T * line);
 
@@ -372,19 +374,26 @@ void KwayMergeSort<T>::Merge() {
   std::multiset < MERGE_DATA<T> > outQueue;
 
   // extract the first line from each temp file
-  T line;
-  for (size_t i = 0; i < _vTempFiles.size(); ++i) {
-    *_vTempFiles[i] >> line;
-    outQueue.insert
-    (MERGE_DATA<T>(line, _vTempFiles[i], _compareFunction));
-  }
+  InitializeMergeStep(&outQueue);
 
+  T line;
   // keep working until the queue is empty
   while (outQueue.empty() == false) {
     MergeStepByStep(&outQueue, &line);   
   }
   // clean up the temp files.
   CloseTempFiles();
+}
+
+template <class T>
+void KwayMergeSort<T>::InitializeMergeStep(std::multiset < MERGE_DATA<T> > * outQueue) {
+  // extract the first line from each temp file
+  T line;
+  for (size_t i = 0; i < _vTempFiles.size(); ++i) {
+    *_vTempFiles[i] >> line;
+    outQueue->insert
+    (MERGE_DATA<T>(line, _vTempFiles[i], _compareFunction));
+  }
 }
 
 template <class T>
