@@ -1,12 +1,3 @@
-:Project: kway-mergesort
-:Version: 0.1.0
-:Authors: - Aaron Quinlan, CPHG, University of Virginia
-:Website: http://cphg.virginia.edu/quinlan
-:Contact: arq5x@virginia.edu
-
-
-.. contents::
-
 ======================================================================
 kway-mergesort - A lightweight, templated C++ API for external sorting
 ======================================================================

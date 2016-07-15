@@ -51,12 +51,15 @@ bool bySize(BED const &a, BED const &b) {
 
 int main(int argc, char* argv[]) {
 
-    string inFile       = argv[1];
-    int  bufferSize     = 100000;      // allow the sorter to use 100Kb (base 10) of memory for sorting.  
-                                       // once full, it will dump to a temp file and grab another chunk.     
-    bool compressOutput = false;       // not yet supported
-    string tempPath     = "./";        // allows you to write the intermediate files anywhere you want.
-    
+  std::string inFile = "..\\..\\example.bed";
+  // allow the sorter to use 100Kb (base 10) of memory for sorting.  
+    int  bufferSize     = 100000;      
+  // once full, it will dump to a temp file and grab another chunk.   
+
+  // not yet supported
+    bool compressOutput = false;  
+    // allows you to write the intermediate files anywhere you want.
+    std::string tempPath = "..\\..\\temp\\";
     // sort a BED file by chrom then start
     KwayMergeSort<BED> *bed_sorter = new KwayMergeSort<BED> (inFile, 
                                                             &cout, 
