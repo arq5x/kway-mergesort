@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
   // sort the lines of a file lexicographically in ascending order
   KwayMergeSort<uint32_t> *sorter = new KwayMergeSort<uint32_t>(inFile,
-                                                                &cout,
+                                                                &std::cout,
                                                                 Uint32_t,
                                                                 bufferSize,
                                                                 compressOutput,

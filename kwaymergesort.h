@@ -117,7 +117,10 @@ public:
   bool operator < (const MERGE_DATA &a) const {
     // recall that priority queues try to sort from
     // highest to lowest. thus, we need to negate.
-    return compFunc(data, a.data);
+    if (compFunc)
+      return compFunc(data, a.data);
+    else
+      return data < a.data;
   }
 };
 

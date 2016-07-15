@@ -4,14 +4,13 @@
 #include <vector>
 #include <string>
 #include <math.h>
-using namespace std;
 
 // local includes
 #include "kwaymergesort.h"
 
 // a basic struct for a BED entry.
 struct BED {
-    string chrom;
+    std::string chrom;
     unsigned int start;
     unsigned int end;
     
@@ -62,25 +61,25 @@ int main(int argc, char* argv[]) {
     std::string tempPath = "..\\..\\temp\\";
     // sort a BED file by chrom then start
     KwayMergeSort<BED> *bed_sorter = new KwayMergeSort<BED> (inFile, 
-                                                            &cout, 
+                                                            &std::cout,
                                                             bufferSize, 
                                                             compressOutput, 
                                                             tempPath);
                                                             
-    cout << "First sort by chrom, then start using the overloaded \"<\" operator\n";
+    std::cout << "First sort by chrom, then start using the overloaded \"<\" operator\n";
     bed_sorter->Sort();
-    cout << "Now, sort by size using a custom function (bySize)\n";
+    std::cout << "Now, sort by size using a custom function (bySize)\n";
     bed_sorter->SetComparison(bySize);
     bed_sorter->Sort();
     
 
     // sort a BED file by chrom then start
     KwayMergeSort<BED> *bed_sorter_custom = new KwayMergeSort<BED> (inFile, 
-                                                                    &cout,
+                                                                    &std::cout,
                                                                     bySize, 
                                                                     bufferSize, 
                                                                     compressOutput, 
                                                                     tempPath);
-    cout << "Now create a new class with bySize() as the custom sort function\n";
+    std::cout << "Now create a new class with bySize() as the custom sort function\n";
     bed_sorter_custom->Sort();
 }
