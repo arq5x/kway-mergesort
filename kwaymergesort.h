@@ -1,6 +1,6 @@
 /****************************************************************************
    kwaymergesort.h (c) 2016 David Nogueira
-   
+
    Derivated from Aaron Quinlan (https://github.com/arq5x/kway-mergesort)
 ****************************************************************************/
 #ifndef KWAYMERGESORT_H
@@ -15,6 +15,7 @@
 #include <vector>
 #include <queue>
 #include <set>
+#include <iterator>
 #include <cstdio>
 #include <errno.h>
 #include <sys/stat.h>
@@ -127,14 +128,113 @@ public:
 // DECLARATION
 // Class methods and elements
 //************************************************
+template <class T> class KwayMergeSort;
+
+
+template <class T>
+class KwayMergeSortIterator
+  :  public std::iterator <std::forward_iterator_tag, T, ptrdiff_t, const T*, const T&>   
+{
+public:
+  friend KwayMergeSort<T>;
+
+  // Construction/Destruction //////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  KwayMergeSortIterator() :
+    _owner(nullptr),
+    _eof(false) {};
+  KwayMergeSortIterator(KwayMergeSort<T> * owner,
+                        T elem,
+                        bool eof = false) :
+    _owner(owner),
+    _elem(elem),
+    _eof(eof) {};
+  ~KwayMergeSortIterator() {};
+
+
+  KwayMergeSortIterator(const KwayMergeSortIterator &other) :
+    KwayMergeSortIterator() {
+    this->operator=(other);
+  }
+
+  KwayMergeSortIterator& KwayMergeSortIterator::operator=(const KwayMergeSortIterator & other) {
+    _owner = other._owner;
+    _elem = other._elem;
+    _eof = other._elem;
+    return *this;
+  }
+  // Forward immutable standard iterator interface ///////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  bool operator==(const KwayMergeSortIterator &other) const {
+    if (other._eof == true && _eof == true)
+      return true;
+    else if (_eof == true)
+      return false;
+    else if (other._eof == true)
+      return false;
+    else {//both _eof false
+      if (_elem == other.e_elem)
+        return true;
+      else
+        return false;
+    }
+  };
+  bool operator!=(const KwayMergeSortIterator &other) const {
+    if (other._eof == true && _eof == true)
+      return false;
+    else if (_eof == true)
+      return true;
+    else if (other._eof == true)
+      return true;
+    else {//both _eof false
+      if (_elem == other._elem)
+        return  false;
+      else
+        return true;
+    }
+  };
+
+  KwayMergeSortIterator& operator++() {
+    if (_owner->_outQueue.empty()) {
+      _eof = true;
+      return *this;
+    } else {
+      _elem = _owner->MergeStepByStep();
+      return *this;
+    }
+  };
+
+  KwayMergeSortIterator  operator++(int) {
+    KwayMergeSortIterator tmp = *this;
+    ++*this;
+    return tmp;
+  };
+
+  const T& operator*() const {
+    return _elem;
+  };
+
+  T value() { return _elem; };
+
+protected:
+  KwayMergeSort<T> * _owner;
+  T _elem;
+  bool _eof;
+};
+
+
+
+
 template <class T>
 class KwayMergeSort {
 
 public:
+  friend KwayMergeSortIterator<T>;
+  typedef KwayMergeSortIterator<T> iterator;
 
   // constructor, using custom comparison function
   KwayMergeSort(const string &inFile,
-                ostream *out,
+                ostream *out = nullptr,
                 bool(*compareFunction)(const T &a, const T &b) = NULL,
                 int  maxBufferSize = 1000000,
                 bool compressOutput = false,
@@ -142,7 +242,7 @@ public:
 
   // constructor, using T's overloaded < operator.  Must be defined.
   KwayMergeSort(const string &inFile,
-                ostream *out,
+                ostream *out = nullptr,
                 int  maxBufferSize = 1000000,
                 bool compressOutput = false,
                 string tempPath = "");
@@ -150,11 +250,11 @@ public:
   // destructor
   ~KwayMergeSort(void);
   // Sort the data
-  void Sort();            
+  void Sort();
   // change the buffer size
-  void SetBufferSize(int bufferSize);   
+  void SetBufferSize(int bufferSize);
   // change the sort criteria
-  void SetComparison(bool(*compareFunction)(const T &a, const T &b));   
+  void SetComparison(bool(*compareFunction)(const T &a, const T &b));
 
   // drives the creation of sorted sub-files stored on disk.
   void DivideAndSort();
@@ -163,11 +263,14 @@ public:
   void Merge();
 
 
-  void InitializeMergeStep(std::multiset < MERGE_DATA<T> > * outQueue);
-  void MergeStepByStep(std::multiset < MERGE_DATA<T> > * outQueue,
-                       T * line);
+  void InitializeMergeStep();
+  T MergeStepByStep();
 
-private:
+  KwayMergeSortIterator<T> begin();
+  KwayMergeSortIterator<T> end();
+
+
+protected:
   string _inFile;
   bool(*_compareFunction)(const T &a, const T &b);
   string _tempPath;
@@ -178,6 +281,10 @@ private:
   bool _compressOutput;
   bool _tempFileUsed;
   ostream *_out;
+
+  // priority queue for the buffer.
+  std::multiset < MERGE_DATA<T> > _outQueue;
+  T _line;
 
   void WriteToTempFile(const vector<T> &lines);
   void OpenTempFiles();
@@ -312,8 +419,11 @@ void KwayMergeSort<T>::DivideAndSort() {
         sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
       else
         sort(lineBuffer.begin(), lineBuffer.end());
-      for (size_t i = 0; i < lineBuffer.size(); ++i)
-        *_out << lineBuffer[i] << endl;
+      for (size_t i = 0; i < lineBuffer.size(); ++i) {
+        if (_out) {
+          *_out << lineBuffer[i] << endl;
+        }
+      }
     }
   }
 }
@@ -371,49 +481,74 @@ void KwayMergeSort<T>::Merge() {
   // loads ifstream pointers into _vTempFiles
   OpenTempFiles();
 
-  // priority queue for the buffer.
-  std::multiset < MERGE_DATA<T> > outQueue;
-
   // extract the first line from each temp file
-  InitializeMergeStep(&outQueue);
+  InitializeMergeStep();
 
-  T line;
   // keep working until the queue is empty
-  while (outQueue.empty() == false) {
-    MergeStepByStep(&outQueue, &line);   
+  while (_outQueue.empty() == false) {
+    MergeStepByStep();
   }
   // clean up the temp files.
   CloseTempFiles();
 }
 
 template <class T>
-void KwayMergeSort<T>::InitializeMergeStep(std::multiset < MERGE_DATA<T> > * outQueue) {
+void KwayMergeSort<T>::InitializeMergeStep() {
   // extract the first line from each temp file
-  T line;
   for (size_t i = 0; i < _vTempFiles.size(); ++i) {
-    *_vTempFiles[i] >> line;
-    outQueue->insert
-    (MERGE_DATA<T>(line, _vTempFiles[i], _compareFunction));
+    *_vTempFiles[i] >> _line;
+    _outQueue.insert
+    (MERGE_DATA<T>(_line, _vTempFiles[i], _compareFunction));
   }
 }
 
 template <class T>
-void KwayMergeSort<T>::MergeStepByStep(std::multiset < MERGE_DATA<T> > * outQueue,
-                                       T * line) {
+T KwayMergeSort<T>::MergeStepByStep() {
   // grab the lowest element, print it, then ditch it.
-  MERGE_DATA<T> lowest = *(outQueue->begin());
+  MERGE_DATA<T> lowest = *(_outQueue.begin());
   // write the entry from the top of the queue
-  *_out << lowest.data << endl;
+  if (_out) {
+    *_out << lowest.data << endl;
+  }
   // remove this record from the queue
-  outQueue->erase(outQueue->begin());
+  _outQueue.erase(_outQueue.begin());
   // add the next line from the lowest stream (above) to the queue
   // as long as it's not EOF.
-  *(lowest.stream) >> *line;
+  *(lowest.stream) >> _line;
   if (*(lowest.stream))
-    outQueue->insert
-    (MERGE_DATA<T>(*line, lowest.stream, _compareFunction));
+    _outQueue.insert
+    (MERGE_DATA<T>(_line, lowest.stream, _compareFunction));
+
+  return lowest.data;
 }
 
+
+template <class T>
+KwayMergeSortIterator<T> KwayMergeSort<T>::begin() {
+
+  DivideAndSort();
+
+  // we can skip this step if there are no temp files to
+  // merge.  That is, the entire inout file fit in memory
+  // and thus we just dumped to stdout.
+  if (_tempFileUsed == false)
+    return end();
+
+  // open the sorted temp files up for merging.
+  // loads ifstream pointers into _vTempFiles
+  OpenTempFiles();
+
+  // extract the first line from each temp file
+  InitializeMergeStep();
+    
+  return KwayMergeSortIterator<T>(this, MergeStepByStep());
+}
+
+template <class T>
+KwayMergeSortIterator<T> KwayMergeSort<T>::end() {
+
+  return KwayMergeSortIterator<T>(this, {}, true);
+}
 
 template <class T>
 void KwayMergeSort<T>::OpenTempFiles() {
