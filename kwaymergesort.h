@@ -256,19 +256,23 @@ public:
   // change the sort criteria
   void SetComparison(bool(*compareFunction)(const T &a, const T &b));
 
+  KwayMergeSortIterator<T> begin();
+  KwayMergeSortIterator<T> end();
+
+protected:
   // drives the creation of sorted sub-files stored on disk.
   void DivideAndSort();
   // drives the merging of the sorted temp files.
   // final, sorted and merged output is written to "out".
   void Merge();
-
-
+  
   void InitializeMergeStep();
   T MergeStepByStep();
 
-  KwayMergeSortIterator<T> begin();
-  KwayMergeSortIterator<T> end();
 
+  void WriteToTempFile(const vector<T> &lines);
+  void OpenTempFiles();
+  void CloseTempFiles();
 
 protected:
   string _inFile;
@@ -286,9 +290,6 @@ protected:
   std::multiset < MERGE_DATA<T> > _outQueue;
   T _line;
 
-  void WriteToTempFile(const vector<T> &lines);
-  void OpenTempFiles();
-  void CloseTempFiles();
 };
 
 
