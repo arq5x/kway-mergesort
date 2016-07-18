@@ -197,6 +197,7 @@ public:
   KwayMergeSortIterator& operator++() {
     if (_owner->_outQueue.empty()) {
       _eof = true;
+      _owner->CloseTempFiles();
       return *this;
     } else {
       _elem = _owner->MergeStepByStep();
