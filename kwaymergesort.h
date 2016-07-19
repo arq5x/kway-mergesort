@@ -1,7 +1,11 @@
 /****************************************************************************
-   kwaymergesort.h (c) 2016 David Nogueira
+   kwaymergesort.h (c) 2009,2010,2011 Aaron Quinlan (c) 2016 David Nogueira
+   Center for Public Health Genomics
+   University of Virginia
+   All rights reserved.
 
-   Derivated from Aaron Quinlan (https://github.com/arq5x/kway-mergesort)
+   MIT License
+
 ****************************************************************************/
 #ifndef KWAYMERGESORT_H
 #define KWAYMERGESORT_H

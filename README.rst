@@ -1,3 +1,14 @@
+:Project: kway-mergesort
+:Version: 1.0.0
+:Author(1): - Aaron Quinlan, CPHG, University of Virginia
+:Website(1): http://cphg.virginia.edu/quinlan
+:Contact(1): arq5x@virginia.edu
+:Author(2): - David Alberto Jácome Nogueira
+:Website(2): http://web.tecnico.ulisboa.pt/david.jacome.nogueira/
+:Contact(2): ahttps://github.com/davidalbertonogueira
+
+.. contents::
+
 ======================================================================
 kway-mergesort - A lightweight, templated C++ API for external sorting
 ======================================================================
@@ -211,5 +222,4 @@ Lastly, we create a new class using the "bySize" function as a custom sort crite
       cout << "Now create a new class with bySize() as the custom sort function\n";
       bed_sorter_custom->Sort();
   }
-
 
