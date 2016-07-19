@@ -133,8 +133,7 @@ template <class T> class KwayMergeSort;
 
 template <class T>
 class KwayMergeSortIterator
-  :  public std::iterator <std::forward_iterator_tag, T, ptrdiff_t, const T*, const T&>   
-{
+  :  public std::iterator <std::forward_iterator_tag, T, ptrdiff_t, const T*, const T&> {
 public:
   friend KwayMergeSort<T>;
 
@@ -428,6 +427,7 @@ void KwayMergeSort<T>::DivideAndSort() {
       }
     }
   }
+  static_cast<ifstream*>(input)->close();
 }
 
 
