@@ -202,6 +202,7 @@ public:
       if (_owner->_outQueue.empty()) {
         _eof = true;
         _owner->CloseTempFiles();
+        std::cout << "Sort completed." << std::endl;
         return *this;
       } else {
         _elem = _owner->MergeStepByStep();
@@ -489,6 +490,10 @@ void KwayMergeSort<T>::WriteToTempFile() {
 //----------------------------------------------------------
 template <class T>
 void KwayMergeSort<T>::Merge() {
+  if (_tempFileUsed)
+    std::cout << "Temporary files were used... merging now." << std::endl;
+  else
+    std::cout << "No temporary files were created... sort completed." << std::endl;
 
   // we can skip this step if there are no temp files to
   // merge.  That is, the entire inout file fit in memory
@@ -509,6 +514,7 @@ void KwayMergeSort<T>::Merge() {
   }
   // clean up the temp files.
   CloseTempFiles();
+  std::cout << "Sort completed." << std::endl;
 }
 
 template <class T>
@@ -546,6 +552,11 @@ template <class T>
 KwayMergeSortIterator<T> KwayMergeSort<T>::begin() {
 
   DivideAndSort();
+
+  if (_tempFileUsed)
+    std::cout << "Temporary files were used... merging now." << std::endl;
+  else
+    std::cout << "No temporary files were created... sort completed." << std::endl;
 
   // we can skip this step if there are no temp files to
   // merge.  That is, the entire inout file fit in memory
