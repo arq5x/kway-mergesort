@@ -137,7 +137,7 @@ template <class T> class KwayMergeSort;
 
 template <class T>
 class KwayMergeSortIterator
-  :  public std::iterator <std::forward_iterator_tag, T, ptrdiff_t, const T*, const T&> {
+  : public std::iterator <std::forward_iterator_tag, T, ptrdiff_t, const T*, const T&> {
 public:
   friend KwayMergeSort<T>;
 
@@ -198,13 +198,24 @@ public:
   };
 
   KwayMergeSortIterator& operator++() {
-    if (_owner->_outQueue.empty()) {
-      _eof = true;
-      _owner->CloseTempFiles();
-      return *this;
+    if (_owner->_tempFileUsed) {
+      if (_owner->_outQueue.empty()) {
+        _eof = true;
+        _owner->CloseTempFiles();
+        return *this;
+      } else {
+        _elem = _owner->MergeStepByStep();
+        return *this;
+      }
     } else {
-      _elem = _owner->MergeStepByStep();
-      return *this;
+      (_owner->_lineBuffer_iterator)++;
+      if (_owner->_lineBuffer_iterator != _owner->_lineBuffer.end()) {
+        _elem = *(_owner->_lineBuffer_iterator);
+        return *this;
+      } else {
+        _eof = true;
+        return *this;
+      }
     }
   };
 
@@ -269,12 +280,12 @@ protected:
   // drives the merging of the sorted temp files.
   // final, sorted and merged output is written to "out".
   void Merge();
-  
+
   void InitializeMergeStep();
   T MergeStepByStep();
 
 
-  void WriteToTempFile(const vector<T> &lines);
+  void WriteToTempFile();
   void OpenTempFiles();
   void CloseTempFiles();
 
@@ -293,7 +304,9 @@ protected:
   // priority queue for the buffer.
   std::multiset < MERGE_DATA<T> > _outQueue;
   T _line;
-
+  // for cases when merge is not necessary
+  vector<T> _lineBuffer;
+  typename vector<T>::iterator _lineBuffer_iterator;
 };
 
 
@@ -374,8 +387,8 @@ void KwayMergeSort<T>::DivideAndSort() {
       << ") could not be opened. Exiting!" << endl;
     exit(1);
   }
-  vector<T> lineBuffer;
-  lineBuffer.reserve(100000);
+
+  _lineBuffer.reserve(100000);
   unsigned int totalBytes = 0;  // track the number of bytes consumed so far.
 
   // track whether or not we actually had to use a temp
@@ -387,46 +400,46 @@ void KwayMergeSort<T>::DivideAndSort() {
   while (*input >> line) {
 
     // add the current line to the buffer and track the memory used.
-    lineBuffer.push_back(line);
+    _lineBuffer.push_back(line);
     totalBytes += sizeof(line);  // buggy?
 
     // sort the buffer and write to a temp file if we have filled up our quota
     if (totalBytes > _maxBufferSize) {
       if (_compareFunction != NULL)
-        sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+        sort(_lineBuffer.begin(), _lineBuffer.end(), *_compareFunction);
       else
-        sort(lineBuffer.begin(), lineBuffer.end());
+        sort(_lineBuffer.begin(), _lineBuffer.end());
       // write the sorted data to a temp file
-      WriteToTempFile(lineBuffer);
+      WriteToTempFile();
       // clear the buffer for the next run
-      lineBuffer.clear();
+      _lineBuffer.clear();
       _tempFileUsed = true;
       totalBytes = 0;
     }
   }
 
   // handle the run (if any) from the last chunk of the input file.
-  if (lineBuffer.empty() == false) {
+  if (_lineBuffer.empty() == false) {
     // write the last "chunk" to the tempfile if
     // a temp file had to be used (i.e., we exceeded the memory)
     if (_tempFileUsed == true) {
       if (_compareFunction != NULL)
-        sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+        sort(_lineBuffer.begin(), _lineBuffer.end(), *_compareFunction);
       else
-        sort(lineBuffer.begin(), lineBuffer.end());
+        sort(_lineBuffer.begin(), _lineBuffer.end());
       // write the sorted data to a temp file
-      WriteToTempFile(lineBuffer);
+      WriteToTempFile();
     }
     // otherwise, the entire file fit in the memory given,
     // so we can just dump to the output.
     else {
       if (_compareFunction != NULL)
-        sort(lineBuffer.begin(), lineBuffer.end(), *_compareFunction);
+        sort(_lineBuffer.begin(), _lineBuffer.end(), *_compareFunction);
       else
-        sort(lineBuffer.begin(), lineBuffer.end());
-      for (size_t i = 0; i < lineBuffer.size(); ++i) {
+        sort(_lineBuffer.begin(), _lineBuffer.end());
+      for (size_t i = 0; i < _lineBuffer.size(); ++i) {
         if (_out) {
-          *_out << lineBuffer[i] << endl;
+          *_out << _lineBuffer[i] << endl;
         }
       }
     }
@@ -436,7 +449,7 @@ void KwayMergeSort<T>::DivideAndSort() {
 
 
 template <class T>
-void KwayMergeSort<T>::WriteToTempFile(const vector<T> &lineBuffer) {
+void KwayMergeSort<T>::WriteToTempFile() {
   // name the current tempfile
   stringstream tempFileSS;
   if (_tempPath.size() == 0)
@@ -453,8 +466,8 @@ void KwayMergeSort<T>::WriteToTempFile(const vector<T> &lineBuffer) {
   output = new ofstream(tempFileName.c_str(), ios::out);
 
   // write the contents of the current buffer to the temp file
-  for (size_t i = 0; i < lineBuffer.size(); ++i) {
-    *output << lineBuffer[i] << endl;
+  for (size_t i = 0; i < _lineBuffer.size(); ++i) {
+    *output << _lineBuffer[i] << endl;
   }
 
   // update the tempFile number and add the tempFile to the list of tempFiles
@@ -537,8 +550,10 @@ KwayMergeSortIterator<T> KwayMergeSort<T>::begin() {
   // we can skip this step if there are no temp files to
   // merge.  That is, the entire inout file fit in memory
   // and thus we just dumped to stdout.
-  if (_tempFileUsed == false)
-    return end();
+  if (_tempFileUsed == false) {
+    _lineBuffer_iterator = _lineBuffer.begin();
+    return KwayMergeSortIterator<T>(this, *_lineBuffer_iterator);
+  }
 
   // open the sorted temp files up for merging.
   // loads ifstream pointers into _vTempFiles
@@ -546,13 +561,12 @@ KwayMergeSortIterator<T> KwayMergeSort<T>::begin() {
 
   // extract the first line from each temp file
   InitializeMergeStep();
-    
+
   return KwayMergeSortIterator<T>(this, MergeStepByStep());
 }
 
 template <class T>
 KwayMergeSortIterator<T> KwayMergeSort<T>::end() {
-
   return KwayMergeSortIterator<T>(this, {}, true);
 }
 
