@@ -4,14 +4,13 @@
 #include <vector>
 #include <string>
 #include <math.h>
-using namespace std;
 
 // local includes
 #include "kwaymergesort.h"
 
 // a basic struct for a BED entry.
 struct BED {
-    string chrom;
+    std::string chrom;
     unsigned int start;
     unsigned int end;
     
@@ -51,33 +50,36 @@ bool bySize(BED const &a, BED const &b) {
 
 int main(int argc, char* argv[]) {
 
-    string inFile       = argv[1];
-    int  bufferSize     = 100000;      // allow the sorter to use 100Kb (base 10) of memory for sorting.  
-                                       // once full, it will dump to a temp file and grab another chunk.     
-    bool compressOutput = false;       // not yet supported
-    string tempPath     = "./";        // allows you to write the intermediate files anywhere you want.
-    
+  std::string inFile = "..\\..\\example.bed";
+  // allow the sorter to use 100Kb (base 10) of memory for sorting.  
+    int  bufferSize     = 100000;      
+  // once full, it will dump to a temp file and grab another chunk.   
+
+  // not yet supported
+    bool compressOutput = false;  
+    // allows you to write the intermediate files anywhere you want.
+    std::string tempPath = "..\\..\\temp\\";
     // sort a BED file by chrom then start
     KwayMergeSort<BED> *bed_sorter = new KwayMergeSort<BED> (inFile, 
-                                                            &cout, 
+                                                            &std::cout,
                                                             bufferSize, 
                                                             compressOutput, 
                                                             tempPath);
                                                             
-    cout << "First sort by chrom, then start using the overloaded \"<\" operator\n";
+    std::cout << "First sort by chrom, then start using the overloaded \"<\" operator\n";
     bed_sorter->Sort();
-    cout << "Now, sort by size using a custom function (bySize)\n";
+    std::cout << "Now, sort by size using a custom function (bySize)\n";
     bed_sorter->SetComparison(bySize);
     bed_sorter->Sort();
     
 
     // sort a BED file by chrom then start
     KwayMergeSort<BED> *bed_sorter_custom = new KwayMergeSort<BED> (inFile, 
-                                                                    &cout,
+                                                                    &std::cout,
                                                                     bySize, 
                                                                     bufferSize, 
                                                                     compressOutput, 
                                                                     tempPath);
-    cout << "Now create a new class with bySize() as the custom sort function\n";
+    std::cout << "Now create a new class with bySize() as the custom sort function\n";
     bed_sorter_custom->Sort();
 }
