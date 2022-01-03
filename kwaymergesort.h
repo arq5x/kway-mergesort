@@ -57,7 +57,9 @@ public:
     {
         // recall that priority queues try to sort from
         // highest to lowest. thus, we need to negate.
-        return !(compFunc(data, a.data));
+        if (compFunc != NULL)
+            return !(compFunc(data, a.data));
+        return !(data < a.data);
     }
 };
 
