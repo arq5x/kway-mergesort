@@ -239,7 +239,6 @@ void KwayMergeSort<T>::DivideAndSort() {
                 sort(lineBuffer.begin(), lineBuffer.end());
             // write the sorted data to a temp file
             WriteToTempFile(lineBuffer);
-            WriteToTempFile(lineBuffer);
         }
         // otherwise, the entire file fit in the memory given,
         // so we can just dump to the output.
